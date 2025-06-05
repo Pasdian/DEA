@@ -1,3 +1,4 @@
+console.log('js/app.js loaded');
 var datosApp;
 var capas = new Array("#ctagastos", "#expaduanal", "#archfiscales", "#vucem", "#docelectronicos", "#expdigital");
 var formulario = "<form id='formSIC' action='sic/index.php' method='post' ></form>";
@@ -6,16 +7,21 @@ var pathFotosNvo = "";
 var cabeceras = Array(" Cuenta De Gastos", " Expediente Aduanal", " Comprobantes Fiscales", " COVE's", " Anexos pedimento-edocs", " Expediente Digital");
 var archZip = false;
 
+// COMENTARIO DE PRUEBA
+
 var procesoID;
 
 $(function() {
+    console.log('Document ready');
     $("#opener").on("click", function() {
+        console.log('Opener clicked');
         Espera(true);
         Auth();
     });
 });
 
 function Auth() {
+    console.log('Auth called');
     $("#msgInf").html("Validando credenciales");
     $.ajax({
         type: "POST",
@@ -26,18 +32,24 @@ function Auth() {
         },
         dataType: "json",
         success: function(data, textStatus, jqXHR) {
+            console.log('Auth success', data);
             datosApp = data;
             if (data.Auth) {
                 preparaApp();
             } else {
+                console.log('Auth failed');
                 $(".mensaje").html("Datos erróneos. Por favor, inténtelo otra vez");
                 Espera(false);
             }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log('Auth AJAX error', textStatus, errorThrown);
         }
     })
 }
 
 function preparaApp() {
+    console.log('preparaApp called', datosApp);
     $("#login").remove();
     $("body").addClass("fondoPagina");
     $("#contenedor").css("visibility", "visible");
@@ -53,27 +65,33 @@ function preparaApp() {
 
     /*forzar usuarios como locales*/
     $("#cmbCliente").change(function() {
+        console.log('Cliente changed');
         cliente();
         referencias();
     });
     $(".pdesde").change(function() {
+        console.log('pdesde changed');
         periodo();
         referencias();
     });
     $(".phasta").change(function() {
+        console.log('phasta changed');
         periodo();
         referencias();
     });
     $("[tipo='scroll'] > tbody").on("click", "tr td", function(e) {
+        console.log('Celda seleccionada', this, e);
         seleccionaCelda(this, e);
     });
     $("#herramientas [class^='icon-']").each(function() {
         $(this).hide();
         $(this).on("click", function() {
+            console.log('Herramienta clicked', $(this).attr("clase"));
             contenidosAside($(this).attr("clase"));
         });
     });
     $("#tools").change(function() {
+        console.log('Tools changed', $("#tools").val());
         if ($("#tools")) {
             if ($("#tools").val() == "dm") {
                 $("#contenidos").empty();
@@ -112,6 +130,7 @@ function preparaApp() {
     $(".busqueda").keypress(function(e) {
         var code = (e.keyCode ? e.keyCode : e.which);
         if (code == 13) {
+            console.log('Busqueda enter pressed', $(".busqueda").val());
             if ($(".busqueda").val() != "" && $(".busqueda").val() != null) {
                 datosApp.buscar = 1;
                 referencias();
@@ -120,9 +139,11 @@ function preparaApp() {
         }
     });
     referencias();
+    console.log('preparaApp finished');
 }
 //formSIC
 function llenaSelect(strControl, opciones) {
+    console.log('llenaSelect', strControl, opciones);
     $(strControl).html("");
     for (op in opciones) {
         $(strControl).html($(strControl).html() + '<option value="' + opciones[op] + '">' + opciones[op] + '</option>');
@@ -130,6 +151,7 @@ function llenaSelect(strControl, opciones) {
 }
 
 function calendarios() {
+    console.log('calendarios called');
     $(".pdesde").datepicker({
         dateFormat: 'dd/mm/yy',
         showButtonPanel: false,
@@ -178,18 +200,24 @@ function calendarios() {
     };
     $.datepicker.setDefaults($.datepicker.regional['es']);
     periodo();
+    console.log('calendarios finished');
 }
 
 function periodo() {
+    console.log('periodo called');
     datosApp.periodo.desde = $(".pdesde").val().substr($(".pdesde").val().lastIndexOf('/') + 1) + '-' + $(".pdesde").val().substr($(".pdesde").val().indexOf('/') + 1, 2) + '-' + $(".pdesde").val().substr(0, 2);;
     datosApp.periodo.hasta = $(".phasta").val().substr($(".phasta").val().lastIndexOf('/') + 1) + '-' + $(".phasta").val().substr($(".phasta").val().indexOf('/') + 1, 2) + '-' + $(".phasta").val().substr(0, 2);
+    console.log('periodo set', datosApp.periodo);
 }
 
 function cliente() {
+    console.log('cliente called');
     datosApp.clienteAct = $("#cmbCliente").val();
+    console.log('clienteAct set', datosApp.clienteAct);
 }
 
 function referencias() {
+    console.log('referencias called');
     $("#contenidos").html("");
     $("#visor").hide();
     $("#operacion").hide();
@@ -218,6 +246,7 @@ function referencias() {
         data: { objJson: datosApp },
         dataType: "json",
         success: function(data) {
+            console.log('referencias AJAX success', data);
             datosApp = null;
             datosApp = data;
             cargaTabla("#referencias", datosApp.referenciasTablaHtml, _cabecera, _pie);
@@ -231,6 +260,7 @@ function referencias() {
             $("#referencias td").each(function() { if ($(this).attr('referencia') == datosApp.referenciaSeleccionada) $(this).click(); });
         },
         error: function(data) {
+            console.log('referencias AJAX error', data);
             $("#msgInf").html("¡Oh, no!");
             $("#msgInf").html("Ocurrio un error");
             setTimeout("Espera(false);", 5000);
@@ -239,9 +269,11 @@ function referencias() {
     $("#co").remove();
     $("#fp").remove();
     $("#gpdf").remove();
+    console.log('referencias finished');
 }
 
 function limpiar() {
+    console.log('limpiar called');
     $("[tipo='scroll']").each(function() {
         $(this).parent().removeClass("fondoSolido").addClass("fondoTransparente");
         $("thead", this).html("");
@@ -249,9 +281,11 @@ function limpiar() {
         $("tbody", this).html("");
     });
     $("aside").removeClass("fondoSolido").addClass("fondoTransparente");
+    console.log('limpiar finished');
 }
 
 function cargaTabla(strSelector, filas, msgCabecera, msgPie) {
+    console.log('cargaTabla', strSelector, filas, msgCabecera, msgPie);
     $(strSelector + " tbody").html(filas);
     $(strSelector + " thead").html("<tr><th>" + msgCabecera.replace("#", $(strSelector + " tbody tr").length) + "</th></tr>");
     $(strSelector + " tfoot").html("<tr><th>" + msgPie.replace("#", $(strSelector + " tbody tr").length) + "</th></tr>");
@@ -265,9 +299,11 @@ function cargaTabla(strSelector, filas, msgCabecera, msgPie) {
             }
         });
     }
+    console.log('cargaTabla finished');
 }
 
 function seleccionaCelda(objeto, evento) {
+    console.log('seleccionaCelda', objeto, evento);
     $("#contenidos").html("");
     capa = $(evento.delegateTarget).parent().parent()[0].id;
     claseObjetivo = $(evento.target).context.className;
@@ -292,21 +328,25 @@ function seleccionaCelda(objeto, evento) {
         contenidosAside("visor");
     }
     $(objeto).addClass("fondoSeleccion").css({ "background": "#1D2BFA", "color": "#fff", "font-size": " 0.8rem" });
+    console.log('seleccionaCelda finished');
 }
 
 function archivos() {
+    console.log('archivos called');
     preparaFilas("01-CTA-GASTOS", "#cg");
     preparaFilas("02-EXPEDIENTE-ADUANAL", "#ea");
     preparaFilas("03-FISCALES", "#cf");
     preparaFilas("04-VUCEM", "#c", "COVE's");
     preparaFilas("04-VUCEM", "#ap");
     preparaFilas("05-EXP-DIGITAL", "#ed");
+    console.log('archivos finished');
 }
 
 function preparaFilas(carpeta, capa) {
+    console.log('preparaFilas', carpeta, capa);
     filas = "";
     obj = datosApp.referencias[datosApp.referenciaSeleccionada];
-  console.log(obj);
+    console.log('preparaFilas obj', obj);
     _cabecera = datosApp.mensajes[$(capa)[0].id].cabecera;
     _pie = datosApp.mensajes[$(capa)[0].id].pie;
     $.each(obj[carpeta], function() {
@@ -325,9 +365,11 @@ function preparaFilas(carpeta, capa) {
         }
     });
     cargaTabla(capa, filas, _cabecera, _pie);
+    console.log('preparaFilas finished');
 }
 
 function contenidosAside(clase) {
+    console.log('contenidosAside', clase);
     switch (clase) {
         case "operacion":
             $("#msgInf").html("Obteniendo Información");
@@ -341,6 +383,7 @@ function contenidosAside(clase) {
 
             /*validar operacion (auditoria)*/
             $("#contenidos").load("php/infoOper.php", { r: datosApp.referenciaSeleccionada }, function() {
+                console.log('infoOper.php loaded');
                 auditarCarpetas();
                 Espera(false);
                 if (archZip) {
@@ -368,6 +411,7 @@ function contenidosAside(clase) {
             $("#max-min").show();
             Espera(true);
             $("#contenidos").load("php/verArchivo.php", { a: datosApp.archivoSeleccionado }, function(data, textStatus, jqXHR) {
+                console.log('verArchivo.php loaded', data);
                 Espera(false);
             });
             break;
@@ -396,6 +440,7 @@ function contenidosAside(clase) {
             $("#max-min").hide();
             limpiaContenidosAside(clase);
             $("#contenidos").load("bienvenido.html", function() {
+                console.log('bienvenido.html loaded');
                 $(".nombreCliente").html(datosApp.clienteActNom);
                 $(".solicitud").html(datosApp.solicitud);
                 $.ajax({
@@ -404,24 +449,30 @@ function contenidosAside(clase) {
                     url: "img/clientes/" + datosApp.clienteAct + ".png",
                     success: function() {
                         $("#logoCte").attr("src", "img/clientes/" + datosApp.clienteAct + ".png").attr("width", "400px");
+                        console.log('Logo cliente loaded');
                     },
                     error: function() {
                         $("#logoCte").attr("src", "img/clientes/default.png").attr("width", "400px");
+                        console.log('Logo default loaded');
                     }
                 });
             });
             break;
     }
+    console.log('contenidosAside finished');
 }
 
 function limpiaContenidosAside(clase) {
+    console.log('limpiaContenidosAside', clase);
     $("#contenidos").html("");
     $("#herramientas [class^='icon-']").css("background", "");
     $("#herramientas [clase='" + clase + "']").css("background", "#1D2BFA");
     $("#herramientas .modo").html("Modo actual: " + $("div [clase='" + clase + "']").attr("title"));
+    console.log('limpiaContenidosAside finished');
 }
 
 function auditarCarpetas() {
+    console.log('auditarCarpetas called');
     incidencias = "";
     $("#dos div table").each(function() {
         incidencias = incidencias + auditaArchCarpeta(this);
@@ -431,9 +482,11 @@ function auditarCarpetas() {
     });
 
     $("#auditCarpeta tbody").html($("#auditCarpeta tbody").html() + "<tr><td colspan=2><table><caption>Incidencias</caption><tr><td>" + incidencias + "</td></tr></table></td></tr>");
+    console.log('auditarCarpetas finished');
 }
 
 function auditaArchCarpeta(obj) {
+    console.log('auditaArchCarpeta', obj);
     str = "";
     if ($("td", obj).length > 0)
         icono = "class='icon-ok' style='color: green;'"
@@ -444,6 +497,7 @@ function auditaArchCarpeta(obj) {
     if ($("td", obj).length == 0)
         str = "La carpeta " + $("thead", obj).text() + " se encuentra vacia<br>";
 
+    console.log('auditaArchCarpeta finished', str);
     return str;
 }
 
@@ -454,6 +508,7 @@ function buscaSubCadena() {
 }
 
 function revisaArchivos(obj, celda, i) {
+    console.log('revisaArchivos', obj, celda, i);
     switch (i) {
         case "01-CTA-GASTOS":
             if ($(datosApp.referencias[$(celda).attr('referencia')][i]).length < 3) {
@@ -469,9 +524,11 @@ function revisaArchivos(obj, celda, i) {
             }*/
             break;
     }
+    console.log('revisaArchivos finished');
 }
 
 function recibeBlobAjax(url, data) {
+    console.log('recibeBlobAjax', url, data);
     var params = typeof data == 'string' ? data : Object.keys(data).map(
         function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]) }
     ).join('&');
@@ -520,13 +577,17 @@ function recibeBlobAjax(url, data) {
                     $("#descarga").remove();
                 }, 100);
             }
+        } else {
+            console.log('recibeBlobAjax failed', this.status);
         }
     };
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send(JSON.stringify(data));
+    console.log('recibeBlobAjax sent');
 }
 
 function cargaIFRAME(url) {
+    console.log('cargaIFRAME', url);
     $("#contenidos").empty();
     /*$("#herramientas div").each(function(){
         $(this).css("background","#FFF");
@@ -549,6 +610,7 @@ function cargaIFRAME_carpeta() {
 }
 
 function generaListaArch(tipo, matriz) {
+    console.log('generaListaArch', tipo, matriz);
     var lista = "";
     $("#contenidos").empty();
     switch (tipo) {
@@ -579,9 +641,11 @@ function generaListaArch(tipo, matriz) {
                 $(this).accordion("refresh");
             }
         });
+    console.log('generaListaArch finished');
 }
 
 function unirArchivos() {
+    console.log('unirArchivos called');
     Espera(true);
     unir = Array();
     $("#msgInf").html("Uniendo archivos");
@@ -591,19 +655,24 @@ function unirArchivos() {
     $("#contenidos").load(
         "php/mpdf.php", { obJson: JSON.stringify(unir), referencia: datosApp.referenciaSeleccionada, cte: datosApp.clienteAct },
         function() {
+            console.log('mpdf.php loaded');
             referencias();
             //procesoID = setInterval(cargaED, 100);
         });
+    console.log('unirArchivos finished');
 }
 
 function cargaED() {
+    console.log('cargaED called');
     if ($("#ed td").length > 0) {
         clearInterval(procesoID);
         $("#ed td")[0].click();
     }
+    console.log('cargaED finished');
 }
 
 function zipDM() {
+    console.log('zipDM called');
     ozip = { "cliente": datosApp.clienteAct };
     $.each(datosApp.referencias, function(i, r) {
         ozip[i] = [];
@@ -627,4 +696,5 @@ function zipDM() {
     $("#msgInf").html("Generando Archivo comprimido");
     Espera(true);
     recibeBlobAjax("php/zipDM.php", ozip);
+    console.log('zipDM finished');
 }
