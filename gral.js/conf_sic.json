@@ -1,0 +1,29 @@
+{
+	"000259":{
+		"cliente": {
+			"nombre":"",
+			"numero":""
+		},
+		"usuario": "",
+		"fecha":"",
+		"path":{
+			"cargue":"../CorreosAutomaticos/Documentos/TRANSBEL/"
+		},
+		"seleccion":"",
+		"backgraund": ""
+	},
+	"004281":{
+		"cliente": {
+			"nombre":"DONALDSON SA DE CV",
+			"numero":"004281"
+		},
+		"usuario": "",
+		"fecha":"",
+		"path":{
+			"pdf":"../3414",
+			"excel":"../CorreosAutomaticos/Documentos"
+		},
+		"seleccion":"",
+		"backgraund": "../gral.img/base2.png"
+	}
+}

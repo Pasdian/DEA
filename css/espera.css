@@ -1,0 +1,28 @@
+#espera{
+    position: absolute;
+    top: 0;
+    left: 0;  
+    height: 100%;
+    width: 100%;
+    background: #898989;
+    text-align: center;
+    opacity:0.75;
+    filter:alpha(opacity=75); /* IE < 9.0 */
+    z-index: 999;
+    display:flex; 
+    align-items: center;
+    visibility: hidden;
+}
+#espera span{
+    width: 100%;
+    text-align: center;
+    font-size: 35px;
+    color: #2A2D89;
+}
+#espera i{
+    font-size: 45px;
+    color: #ED1941;
+}
+#contenedor{
+    visibility: hidden;
+}
