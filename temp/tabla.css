@@ -1,0 +1,74 @@
+
+
+[componente="tabla"]{
+    border: 1px solid rgba(29,43,250,.5);
+    overflow: hidden;
+    box-shadow: 2px 4px 6px rgba(0,0,0,.6);
+    background: #1D2BFA;
+}
+
+[tipo="scroll"]{
+    height: 100%;
+    width: 100%;    
+}
+
+[tipo="scroll"] tr {
+    display: flex;
+    padding: 0;
+    margin: 0;
+}
+
+[tipo="scroll"] td {
+    flex: 1 auto;
+    word-wrap: break;
+    border-bottom: 1px solid rgba(29,43,250,.1);
+    font-size: 0.8rem;
+    color: #000;
+}
+
+[tipo="scroll"] thead th,[tipo="scroll"] tfoot th {
+    flex: 1 auto;
+    display: block;
+    /*padding: 2px;*/
+    text-align: center;
+    font-size: 1rem;
+    font-weight: bolder;
+    font-variant: small-caps;
+    border-right: 1px solid rgba(0,0,0,.2);
+    color: #fff;
+}
+
+[tipo="scroll"] thead tr:after {
+    content: '';
+    overflow-y: scroll;
+    visibility: hidden;
+    height: 0;
+}
+
+[tipo="scroll"] tfoot tr:after {
+    content: '';
+    overflow-y: scroll;
+    visibility: hidden;
+    height: 0;
+    font-size: 0.7rem;
+}
+
+
+[tipo="scroll"] tbody {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow-y:scroll;
+    background: #fff;
+}
+
+[tipo="scroll"] tbody tr:nth-child(odd) {
+    background: rgba(0,0,0,.1);
+}
+
+[tipo="scroll"] td:hover{
+    cursor: pointer;
+    background: #1D2BFA;
+    font-size: 1rem;
+    color: #fff;
+}

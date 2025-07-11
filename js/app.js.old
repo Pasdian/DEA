@@ -1,0 +1,623 @@
+var datosApp;
+var capas=new Array("#ctagastos", "#expaduanal", "#archfiscales","#vucem","#docelectronicos","#expdigital");
+var formulario="<form id='formSIC' action='sic/index.php' method='post' ></form>";
+    
+
+var cabeceras=Array(" Cuenta De Gastos", " Expediente Aduanal", " Comprobantes Fiscales"," COVE's"," Anexos pedimento-edocs"," Expediente Digital");
+var archZip=false;
+
+var procesoID;
+
+$(function(){
+    $( "#opener" ).on( "click",function(){
+        Espera(true);
+        Auth();
+    });
+});
+
+function Auth(){
+    $("#msgInf").html("Validando credenciales");
+    $.ajax({
+        type: "POST",
+        url: "php/login.php",
+        data: {
+            usr:document.getElementById("usr").value,
+			pwd:document.getElementById("pwd").value
+        },
+        dataType:"json",
+        success: function (data, textStatus, jqXHR) {
+            datosApp=data;
+            if(data.Auth){
+                preparaApp();
+            } else{
+                $(".mensaje").html("Datos erróneos. Por favor, inténtelo otra vez");
+                Espera(false);
+            }
+        }
+    })
+}
+
+function preparaApp(){
+    $("#login").remove();
+    $("body").addClass("fondoPagina");
+    $("#contenedor").css("visibility","visible");
+    $(".usuario").html(datosApp.nombre);
+    llenaSelect("#cmbCliente",datosApp.grupos);
+    calendarios();
+/*forzar usuarios como locales*/
+per_usr_gen_exp_dig=["jborja","rangeles","ibustos","chuerta","rhernandez","mcolunga","dsantos","dquijano","pgonzalez","mguzman","ejimenez","veracruz02"];
+per_usr_gen_exp_dig.forEach(function(e,i){
+    if(e==datosApp.usuario)
+	datosApp.solicitud="LOCAL";
+});
+
+/*forzar usuarios como locales*/
+    $("#cmbCliente").change(function(){
+        cliente();
+        referencias();
+    });
+    $( ".pdesde" ).change(function(){
+        periodo(); 
+        referencias();
+    });
+    $( ".phasta" ).change(function(){
+        periodo();
+        referencias();
+    });
+    $( "[tipo='scroll'] > tbody").on("click","tr td",function(e){
+        seleccionaCelda(this,e);
+    });
+    $("#herramientas [class^='icon-']").each(function(){
+        $(this).hide();
+        $(this).on("click",function(){
+            contenidosAside($(this).attr("clase"));
+        });
+    });
+    $("#tools").change(function(){
+        if($("#tools")){ 
+            if($("#tools").val()=="dm"){
+                $("#contenidos").empty();
+                $("#contenidos").load("php/descmasiva.php",function(){
+                    $("#fechas").html("del "+datosApp.periodo.desde+" al "+datosApp.periodo.hasta);
+                });
+            }            
+            if($("#tools").val()=="co"){
+                cargaIFRAME('../Gestion/'+datosApp.clienteAct+"/"+datosApp.referenciaSeleccionada+"/"+datosApp.carpetaOperativa);
+            }
+            if($("#tools").val()=="fp"){
+                /*cargaIFRAME('../Gestion/'+datosApp.clienteAct+"/"+datosApp.referenciaSeleccionada+"/"+datosApp.fotosPrevios); */
+                cargaIFRAME(''+datosApp.referenciaSeleccionada+"");
+            }
+            if($("#tools").val()=="gpdf"){
+                generaListaArch("PDF",datosApp.referencias[datosApp.referenciaSeleccionada]);
+            }
+            if($("#tools").val()=="sic"){
+                
+                $("#contenidos").append(formulario);
+                
+                    $("#formSIC").append("<input type='text' name='empresa'  value='"+datosApp.clienteActNom+"'>");
+                    $("#formSIC").append("<input type='text' name='usr'  value='"+datosApp.nombre+"'>");
+                    $("#formSIC").append("<input type='text' name='cte'  value='"+datosApp.clienteAct+"'>");
+                    $("#formSIC").append('<input id="enviar" type="submit" value="Enviar">');
+                    
+                
+                $("#enviar").click();
+                $("#formSIC").remove();
+                //window.open("http://sic.aapascal.net","_blank");
+            }
+            $("#tools").val("ha");
+            $('select option[value="ha"]').attr("selected", true);
+        }
+    }); 
+    $(".busqueda").keypress(function(e){
+        var code = (e.keyCode ? e.keyCode : e.which); 
+        if(code == 13){ 
+            if ($(".busqueda").val()!="" && $(".busqueda").val()!=null){
+                datosApp.buscar=1; 
+                referencias();
+            }
+            return false; 
+        } 
+    });
+    referencias();
+}
+//formSIC
+function llenaSelect(strControl,opciones){
+    $(strControl).html("");
+    for(op in opciones){
+        $(strControl).html($(strControl).html()+'<option value="'+opciones[op]+'">'+opciones[op]+'</option>');
+    }
+}
+
+function calendarios(){
+    $( ".pdesde" ).datepicker({
+            dateFormat: 'dd/mm/yy',
+            showButtonPanel: false,
+            changeMonth: true,
+            changeYear: true,
+            showWeek: true,
+            firstDay: 1,
+            defaultDate: "+2m",
+            minDate: '-2Y',
+            maxDate: '+0D',
+            inline: true,
+            onClose: function(getDate){
+                $(".phasta").datepicker("option", "minDate", getDate);
+            ;}        
+        }).datepicker("setDate",'-21D');
+        $( ".phasta" ).datepicker({
+            dateFormat: 'dd/mm/yy',
+            showButtonPanel: false,
+            changeMonth: true,
+            changeYear: true,
+            showWeek: true,
+            firstDay: 1,
+            minDate: '-2Y',
+            maxDate: '+0D',
+            inline: true,
+            onClose: function(getDate){
+                $(".pdesde").datepicker("option", "maxDate", getDate);
+            ;}        
+        }).datepicker("setDate",new Date());    
+        $.datepicker.regional['es'] = {
+            closeText: 'Cerrar',
+            prevText: '<Ant',
+            nextText: 'Sig>',
+            currentText: 'Hoy',
+            monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+            dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Juv', 'Vie', 'Sáb'],
+            dayNamesMin: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+            weekHeader: 'Sm',
+            dateFormat: 'dd/mm/yy',
+            firstDay: 1,
+            isRTL: false,
+            showMonthAfterYear: false,
+            yearSuffix: ''
+        };
+        $.datepicker.setDefaults($.datepicker.regional['es']);    
+    periodo();
+}
+
+function periodo(){
+    datosApp.periodo.desde=$( ".pdesde" ).val().substr($( ".pdesde" ).val().lastIndexOf('/')+1)+'-'+$( ".pdesde" ).val().substr($( ".pdesde" ).val().indexOf('/')+1,2)+'-'+$( ".pdesde" ).val().substr(0,2);;
+    datosApp.periodo.hasta=$( ".phasta" ).val().substr($( ".phasta" ).val().lastIndexOf('/')+1)+'-'+$( ".phasta" ).val().substr($( ".phasta" ).val().indexOf('/')+1,2)+'-'+$( ".phasta" ).val().substr(0,2);
+}
+
+function cliente(){
+    datosApp.clienteAct=$("#cmbCliente").val();
+}
+
+function referencias(){
+    $("#contenidos").html("");
+    $("#visor").hide();
+    $("#operacion").hide();
+    $("#inicio").hide();
+    $(".modo").html("");
+    $("#dos").hide();
+    $("#tres").hide();
+    Espera(true);
+    $("#msgInf").html("Cargado datos de Referencias");
+    datosApp.referencias=null;
+    datosApp.referenciasTablaHtml=null;
+    datosApp.clienteActNom=null;
+    limpiar();
+    _cabecera=datosApp.mensajes.r.cabecera;
+    _pie=datosApp.mensajes.r.pie.replace("#periodo",$( ".pdesde" ).val()+" A "+$( ".phasta" ).val());
+    if(datosApp.buscar>0){
+        _pie="Resultados de la b&uacute;squeda";
+        datosApp.buscarCadena=$(".busqueda").val();
+        $("#msgInf").html("Realizando la b&uacutesqueda");
+    }
+    $("#informacion").load("bienvenido.html");
+    $.ajax({
+        cache:false,
+        type: "POST",
+        url: "php/refCarpArch.php",
+        data: {objJson:datosApp},
+        dataType:"json",
+        success: function(data){ 
+            datosApp=null;
+            datosApp=data;
+            cargaTabla("#referencias",datosApp.referenciasTablaHtml,_cabecera,_pie);
+            contenidosAside("inicio");
+            llenaSelect("#faduana",datosApp.filtros.aduanas);
+            llenaSelect("#fdocumento",datosApp.filtros.documentos);
+            llenaSelect("#foperacion",datosApp.filtros.operacion);
+            Espera(false);
+            datosApp.buscar=-1;
+            $(".busqueda").val("");
+            $("#referencias td").each(function(){if($(this).text()==datosApp.referenciaSeleccionada) $(this).click();});
+        },
+        error: function(data){
+            $("#msgInf").html("¡Oh, no!");
+            $("#msgInf").html("Ocurrio un error");
+            setTimeout ("Espera(false);", 5000);
+        }
+    });
+    $("#co").remove();
+    $("#fp").remove();
+    $("#gpdf").remove();
+}
+
+function limpiar(){
+    $("[tipo='scroll']").each(function(){
+        $(this).parent().removeClass("fondoSolido").addClass("fondoTransparente");
+        $("thead",this).html("");
+        $("tfoot",this).html("");
+        $("tbody",this).html("");
+    });
+    $("aside").removeClass("fondoSolido").addClass("fondoTransparente"); 
+}
+
+function cargaTabla(strSelector,filas,msgCabecera,msgPie){ 
+    $(strSelector+" tbody").html(filas);
+    $(strSelector+" thead").html("<tr><th>"+msgCabecera.replace("#",$(strSelector+" tbody tr").length)+"</th></tr>");
+    $(strSelector+" tfoot").html("<tr><th>"+msgPie.replace("#",$(strSelector+" tbody tr").length)+"</th></tr>");
+    if(strSelector=="#referencias"){
+        $("#referencias tbody td").each(function(ind,celda){
+            objReferencia=$(datosApp.referencias[$(celda).text()])[0];
+            if($(objReferencia).length!=0){
+                $.each(objReferencia,function(ind){
+                    revisaArchivos(objReferencia,celda,ind);
+                });
+            }            
+        });    
+    }  
+}
+
+function seleccionaCelda(objeto,evento){
+    $("#contenidos").html("");
+    capa=$(evento.delegateTarget).parent().parent()[0].id;
+    claseObjetivo=$(evento.target).context.className;
+    $("#gpdf").remove();
+    if(capa=="referencias"){
+        $("td[referencia]").removeClass("fondoSeleccion").removeAttr('style');
+        //datosApp.referenciaSeleccionada=$(objeto).text();
+	datosApp.referenciaSeleccionada=$(objeto).attr('referencia');
+        datosApp.archivoSeleccionado="";
+        $("#dos").show();
+        $("#tres").show();
+        archivos();
+        if($(evento.target).context.className=="icon-download")
+            archZip=true;
+        contenidosAside("operacion");
+        if(!$("#co").length>0 && datosApp.solicitud=="LOCAL") $("#tools").append('<option value="co" id="co">Carpeta Operativa</option>');
+        if(!$("#fp").length>0) $("#tools").append('<option value="fp" id="fp">Fotos Previos</option>');
+        if(!$("#gpdf").length>0 && datosApp.solicitud=="LOCAL" && $("#ed td").length<1) $("#tools").append('<option value="gpdf" id="gpdf">Generar PDF</option>');            
+    } else{
+        $("td[archivo]").removeClass("fondoSeleccion").removeAttr('style');
+        datosApp.archivoSeleccionado=$(objeto).attr("archivo");
+        contenidosAside("visor");
+    }
+    $(objeto).addClass("fondoSeleccion").css({"background":"#1D2BFA","color":"#fff","font-size":" 0.8rem"});
+}
+
+function archivos(){
+    preparaFilas("01-CTA-GASTOS","#cg");
+    preparaFilas("02-EXPEDIENTE-ADUANAL","#ea");
+    preparaFilas("03-FISCALES","#cf");
+    preparaFilas("04-VUCEM","#c","COVE's");
+    preparaFilas("04-VUCEM","#ap");
+    preparaFilas("05-EXP-DIGITAL","#ed");
+}
+
+function preparaFilas(carpeta,capa){
+    filas="";
+    obj=datosApp.referencias[datosApp.referenciaSeleccionada];
+    _cabecera=datosApp.mensajes[$(capa)[0].id].cabecera;
+    _pie=datosApp.mensajes[$(capa)[0].id].pie;
+    $.each(obj[carpeta],function(){
+        switch(capa){
+            case "#c":
+                if(this.indexOf('_COVE') > -1 || this.indexOf('3PSIM') > -1)
+                    filas=filas+"<tr><td archivo='"+datosApp.clienteAct+"/"+datosApp.referenciaSeleccionada+"/"+carpeta+"/"+this+"'>"+this+"</td></tr>";        
+                break;
+            case "#ap":
+                if(!(this.indexOf('_COVE') > -1 || this.indexOf('3PSIM') > -1))
+                    filas=filas+"<tr><td archivo='"+datosApp.clienteAct+"/"+datosApp.referenciaSeleccionada+"/"+carpeta+"/"+this+"'>"+this+"</td></tr>";
+                break;
+            default:
+                filas=filas+"<tr><td archivo='"+datosApp.clienteAct+"/"+datosApp.referenciaSeleccionada+"/"+carpeta+"/"+this+"'>"+this+"</td></tr>";
+                break;
+        }  
+    });
+    cargaTabla(capa,filas,_cabecera,_pie);
+}
+
+function contenidosAside(clase){
+    switch(clase) {
+        case "operacion":
+            $("#msgInf").html("Obteniendo Información");
+            Espera(true);
+            limpiaContenidosAside(clase);
+            $("#inicio").show();
+            $("#operacion").show();
+            if(datosApp.archivoSeleccionado=="")
+                $("#visor").hide();
+            $("#max-min").hide();
+            
+            /*validar operacion (auditoria)*/
+            $("#contenidos").load("php/infoOper.php",{r:datosApp.referenciaSeleccionada},function(){
+                auditarCarpetas();
+                Espera(false);
+                if(archZip){
+                    datosApp.zip={
+                        "nombre":$("caption[comp]").attr("comp")+".zip",
+                        "rutaDestino":datosApp.clienteAct+"/",
+                        "rutaFuente":datosApp.clienteAct+"/"+datosApp.
+                        referenciaSeleccionada+"/","archivos":""};
+                    datosApp.zip.archivos=datosApp.referencias[datosApp.referenciaSeleccionada];
+                    $("#msgInf").html("Generando Archivo comprimido");
+                    Espera(true);
+                    recibeBlobAjax("php/zipReferencia.php",datosApp.zip);
+                    archZip=false;
+                    datosApp.zip='';
+                }
+            });
+            break;
+        case "visor":
+            $("#msgInf").html("Recuperando Archivo");
+            limpiaContenidosAside(clase);
+            $("#visor").show();
+            $("#max-min").show();
+            Espera(true);
+            $("#contenidos").load("php/verArchivo.php",{a:datosApp.archivoSeleccionado},function(data, textStatus, jqXHR){
+                Espera(false);
+            });
+            break;
+        case "max-min":
+            $("#herramientas .modo").html("Modo actual: "+$("div [clase='visor']").attr("title"));
+            $("#herramientas [class^='icon-']").css("background","");
+            $("#herramientas [clase='visor']").css("background","#1D2BFA");
+            if($("#max-min").hasClass("icon-plus")){
+                $("#max-min").removeClass("icon-plus").addClass("icon-minus").attr("title","Minimizar");
+                $("aside").css({"position":"absolute","top":"0","left":"0","height":"100%","max-width":"100%"}).removeClass("fondoTransparente");
+                $("#contenidos").css("max-width","100vw");
+                $("#herramientas").css("background","#000");
+                $("#inicio").hide();
+                $("#operacion").hide();
+                $("#visor").hide();
+            } else{
+                $("aside").removeAttr("style").addClass("fondoTransparente");
+                $("#contenidos").removeAttr("style");
+                $("#max-min").removeClass("icon-minus").addClass("icon-plus").attr("title","Maximizar");
+                $("#inicio").show();
+                $("#operacion").show();
+                $("#visor").show();
+            }
+            break;
+        default:
+            $("#max-min").hide();
+            limpiaContenidosAside(clase);
+            $("#contenidos").load("bienvenido.html",function(){
+                $(".nombreCliente").html(datosApp.clienteActNom);
+                $(".solicitud").html(datosApp.solicitud);
+                $.ajax({
+                    /*async:false,    
+                    cache:false,*/
+                    url:"img/clientes/"+datosApp.clienteAct+".png",
+                    success:function(){
+                        $("#logoCte").attr("src","img/clientes/"+datosApp.clienteAct+".png").attr("width","400px");
+                    },
+                    error:function(){
+                        $("#logoCte").attr("src","img/clientes/default.png").attr("width","400px");
+                    }
+                });                             
+            });
+            break;
+    }
+}
+
+function limpiaContenidosAside(clase){
+    $("#contenidos").html("");
+    $("#herramientas [class^='icon-']").css("background","");
+    $("#herramientas [clase='"+clase+"']").css("background","#1D2BFA");
+    $("#herramientas .modo").html("Modo actual: "+$("div [clase='"+clase+"']").attr("title"));
+}
+
+function auditarCarpetas(){
+    incidencias="";
+    $("#dos div table").each(function(){
+         incidencias=incidencias+auditaArchCarpeta(this);
+    });
+        $("#tres div table").each(function(){
+        incidencias=incidencias+auditaArchCarpeta(this);
+    });
+    
+    $("#auditCarpeta tbody").html($("#auditCarpeta tbody").html()+"<tr><td colspan=2><table><caption>Incidencias</caption><tr><td>"+incidencias+"</td></tr></table></td></tr>");            
+}
+
+function auditaArchCarpeta(obj){
+    str="";
+    if($("td",obj).length>0)
+        icono="class='icon-ok' style='color: green;'"
+    else 
+        icono="class='icon-cancel' style='color: red;'";
+    
+    $("#auditCarpeta tbody").html($("#auditCarpeta tbody").html()+"<tr><td>"+$("thead",obj).text()+"<div style='float: right;'><i "+icono+" style='color: green;'></i></div></td><td>"+$("td",obj).length+" Archivos</td></tr>");
+    if($("td",obj).length==0)
+        str="La carpeta "+$("thead",obj).text()+" se encuentra vacia<br>";
+    
+    return str;
+}
+
+/*Buscar subcdena en string o matriz*/
+
+function buscaSubCadena(){
+    
+}
+
+function revisaArchivos(obj,celda,i){
+    switch(i){
+        case "01-CTA-GASTOS":
+            if($(datosApp.referencias[$(celda).text()][i]).length<3){
+                $("i",celda).remove();
+                $(celda).addClass("fondoCarpetaVacia");
+            }
+            break;    
+        default:
+            /*if($(datosApp.referencias[$(celda).text()][i]).length==0){
+                $("i",celda).remove();
+                if($(datosApp.referencias[$(celda).text()]["01-CTA-GASTOS"]).length!=0)
+                    $(celda).addClass("fondoCarpetaVacia");
+            }*/
+            break;
+    }
+}
+
+function recibeBlobAjax(url,data){
+    var params = typeof data == 'string' ? data : Object.keys(data).map(
+            function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]) }
+        ).join('&');
+    
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function () {
+        if (this.status === 200) {
+            var filename = "";
+            var disposition = xhr.getResponseHeader('Content-Disposition');
+            if (disposition && disposition.indexOf('attachment') !== -1) {
+                var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                var matches = filenameRegex.exec(disposition);
+                if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+            }
+            var type = xhr.getResponseHeader('Content-Type');
+
+            var blob = typeof File === 'function'
+                ? new File([this.response], filename, { type: type })
+                : new Blob([this.response], { type: type });
+            if (typeof window.navigator.msSaveBlob !== 'undefined') {
+                window.navigator.msSaveBlob(blob, filename);
+            } else {
+                var URL = window.URL || window.webkitURL;
+                var downloadUrl = URL.createObjectURL(blob);
+
+                if (filename) {
+
+                    var a = document.createElement("a");
+                    if (typeof a.download === 'undefined') {
+                        window.location = downloadUrl;
+                    } else {
+                        a.href = downloadUrl;
+                        a.download = filename;
+                        a.id="descarga";
+                        document.body.appendChild(a);
+                        a.click();
+                    }
+                } else {
+                   // window.location = downloadUrl;
+                }
+                setTimeout(function () { 
+                    URL.revokeObjectURL(downloadUrl);
+                    Espera(false); 
+                    $("#descarga").remove();
+                }, 100);
+            }
+        }
+    };
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.send(JSON.stringify(data));    
+}
+
+function cargaIFRAME(url){
+    $("#contenidos").empty();
+    /*$("#herramientas div").each(function(){
+        $(this).css("background","#FFF");
+    })*/
+    /*$("#contenidos").append("<iframe style='position:fixed; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:50%; border:none; margin:0; padding:0;'  frameborder=0/>");
+    $("#contenidos iframe").attr("src",url);*/
+    //alert("fotos.html?previo="+url);
+    url=
+    $("#contenidos").load("php/fotos.php",{previo: url});
+    console.log($("#tools").val());
+    
+}
+
+function cargaIFRAME_fotos(){
+    
+}
+
+function cargaIFRAME_carpeta(){
+    
+}
+
+function generaListaArch(tipo,matriz){
+    var lista="";
+    $("#contenidos").empty();
+    switch(tipo){
+        case "PDF":
+            lista="<div style='text-align: center;width: 100%;'><h2>Archivos y Orden</h2><div id='mergePDF'>";
+            $.each(matriz,function(carpeta,v){
+                $.each(v,function(k,v){
+                    if(v.substring(v.lastIndexOf(".")+1).toUpperCase()==tipo)
+                        lista=lista+"<div><h4 archivo='"+datosApp.clienteAct+"/"+datosApp.referenciaSeleccionada+"/"+carpeta+"/"+v+"'>"+v+"</h4></div>";
+                });	
+            });
+            lista=lista+"<br></div><br><br><input type='button' onclick='unirArchivos()' value='Proceder'></div>";
+            break;
+        default:
+            break;
+    }
+    $("#contenidos").append(lista);
+    $("#mergePDF")
+        .accordion({
+            heightStyle: "fill",
+            header: "> div > h4"
+        })
+        .sortable({
+            axis: "y",
+            handle: "h4",
+            stop: function( event, ui ) {
+                ui.item.children( "h4" ).triggerHandler( "focusout" );
+                $( this ).accordion( "refresh" );
+            }
+        });
+}
+
+function unirArchivos(){
+    Espera(true);
+    unir=Array();
+    $("#msgInf").html("Uniendo archivos");
+    $("#mergePDF h4").each(function(i){
+        unir[i]="/var/Gestion/"+$($("#mergePDF h4")[i]).attr("archivo");
+    });
+    $("#contenidos").load(
+                "php/mpdf.php",
+                {obJson:JSON.stringify(unir),referencia:datosApp.referenciaSeleccionada,cte:datosApp.clienteAct},
+                function(){
+                    referencias();
+                    //procesoID = setInterval(cargaED, 100);
+                });
+}
+
+function cargaED(){
+    if($("#ed td").length>0){
+        clearInterval(procesoID);
+        $("#ed td")[0].click();
+    }
+}
+
+function zipDM(){
+    ozip={"cliente":datosApp.clienteAct};
+    $.each(datosApp.referencias,function(i,r){
+        ozip[i]=[];
+        $.each(r,function(j,c){
+            $.each(c,function(k){
+                if($("#dm_cg").is(':checked') && this.indexOf("_1CtaG_") > -1)
+                    ozip[i].push(j+"/"+this);
+                if($("#dm_fac").is(':checked') && this.indexOf("_2Fact_") > -1)
+                    ozip[i].push(j+"/"+this);
+                if($("#dm_ped").is(':checked') && this.indexOf("_2PNOR_") > -1)
+                    ozip[i].push(j+"/"+this);
+                if($("#dm_mv").is(':checked') && (this.indexOf("_6MANV") > -1 || this.indexOf("_7HOJC") > -1 || this.indexOf("_8AHJC") > -1))
+                    ozip[i].push(j+"/"+this);
+            });
+       });
+    });
+    $("#msgInf").html("Generando Archivo comprimido");
+    Espera(true);
+    recibeBlobAjax("php/zipDM.php",ozip);   
+}

@@ -1,0 +1,40 @@
+.animate-spin {
+  animation: spin 2s infinite linear;
+  display: inline-block;
+  /* Asegúrate de que la imagen tenga fondo transparente */
+  background: transparent !important;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+    filter: hue-rotate(0deg); /* Color original */
+  }
+  100% {
+    transform: rotate(359deg);
+    filter: hue-rotate(360deg); /* Ciclo completo de colores */
+  }
+}
+
+/* Prefijos para compatibilidad */
+@-webkit-keyframes spin {
+  0% {
+    -webkit-transform: rotate(0deg);
+    -webkit-filter: hue-rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(359deg);
+    -webkit-filter: hue-rotate(360deg);
+  }
+}
+
+@-moz-keyframes spin {
+  0% {
+    -moz-transform: rotate(0deg);
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    -moz-transform: rotate(359deg);
+    filter: hue-rotate(360deg);
+  }
+}
